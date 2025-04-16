@@ -17,12 +17,25 @@ public class kdController : MonoBehaviour
         _tree = new KdTree();
         _tree.build(bricks.Select(brick => brick.transform.position).ToArray(),
             bricks.Select(brick => brick.gameObject.GetInstanceID()).ToArray());
+        for (int i = 0; i < bricks.Length; i++)
+        {
+            bricks[i].Init(this);
+        }
+        int nearestId = _tree.nearest(ball.position);
+        Debug.Log($"Nearest Brick Position: {nearestId}");
+// 删除最近点
+        _tree.delete(nearestId);
+
+// 再次查询应该得到不同结果
+        int newNearestId = _tree.nearest(ball.position);
+        Debug.Assert(nearestId != newNearestId); 
+        Debug.Log($"Nearest Brick Position: {newNearestId}");
     }
 
     // Update is called once per frame
     void Update()
     {
-        // 获取球的位置
+        /*// 获取球的位置
         Vector3 ballPosition = ball.position;
 
         // 找到距离球最近的 Brick
@@ -53,7 +66,7 @@ public class kdController : MonoBehaviour
         if (nearestIndex == -1)
         {
             Debug.Log("No valid Brick found.");
-        }
+        }*/
     }
 
     public void Delete(Brick brick)

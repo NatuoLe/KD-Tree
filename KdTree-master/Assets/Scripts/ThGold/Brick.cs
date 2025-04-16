@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class Brick: MonoBehaviour
 {
     private kdController kdController;
+    private KdTreeTest KdTreeTest;
     public bool inHatchery
     {
         get
@@ -14,7 +16,7 @@ public class Brick: MonoBehaviour
             hatchery = value;
             if (hatchery)
             {
-                kdController.Delete(this);
+                kdController?.Delete(this);
             }
         }
     }
@@ -24,5 +26,14 @@ public class Brick: MonoBehaviour
     public void Init(kdController kdController)
     {
         this.kdController = kdController;
+    }
+    public void Init(KdTreeTest KdTreeTest)
+    {
+        this.KdTreeTest = KdTreeTest;
+    }
+
+    private void Awake()
+    {
+        name = gameObject.transform.position.ToString();
     }
 }

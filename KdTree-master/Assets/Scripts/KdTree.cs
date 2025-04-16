@@ -67,7 +67,7 @@ public class KdTree
         return ids[nearest(point, _root, 0)];
     }
 
-    /*private int nearest(Vector3 point, Point p, int depth)
+    private int nearest(Vector3 point, Point p, int depth)
     {
         if (p == null)
             return -1;
@@ -91,8 +91,8 @@ public class KdTree
         }
 
         return closer(point, leaf, p.mid);
-    }*/
-    private int nearest(Vector3 point, Point p, int depth) {
+    }
+    /*private int nearest(Vector3 point, Point p, int depth) {
         if (p == null || p.deleted)
             return -1;
 
@@ -125,7 +125,7 @@ public class KdTree
         }
 
         return leaf;
-    }
+    }*/
     private float sqDist(Vector3 point, int index)
     {
         if (index == -1)

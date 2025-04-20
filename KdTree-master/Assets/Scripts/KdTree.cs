@@ -95,10 +95,6 @@ public class KdTree
             return -1;
 
         int best = -1;
-
-        // ----------------------------
-        // 关键修改点：仅在节点未删除时将其加入候选
-        // ----------------------------
         if (!p.deleted)
         {
             best = p.mid; // 当前节点有效时，初始化最佳候选
@@ -126,40 +122,6 @@ public class KdTree
 
         return best;
     }
-    /*private int nearest(Vector3 point, Point p, int depth) {
-        if (p == null || p.deleted)
-            return -1;
-
-        var axis = p.axis;
-        int leaf;
-        var dist2mid = points[p.mid][axis] - point[axis];
-
-        if (dist2mid > 0) {
-            // 递归搜索左子树
-            leaf = nearest(point, p.smaller, depth + 1);
-            if (leaf == -1 || sqDist(point, leaf) > dist2mid * dist2mid) {
-                // 如果左子树没有找到有效节点，或者当前中点更近，则考虑右子树
-                leaf = closer(point, leaf, p.mid);
-                if (leaf == -1 || sqDist(point, leaf) > dist2mid * dist2mid) {
-                    // 如果中点也不行，递归搜索右子树
-                    leaf = closer(point, leaf, nearest(point, p.larger, depth + 1));
-                }
-            }
-        } else {
-            // 递归搜索右子树
-            leaf = nearest(point, p.larger, depth + 1);
-            if (leaf == -1 || sqDist(point, leaf) > dist2mid * dist2mid) {
-                // 如果右子树没有找到有效节点，或者当前中点更近，则考虑左子树
-                leaf = closer(point, leaf, p.mid);
-                if (leaf == -1 || sqDist(point, leaf) > dist2mid * dist2mid) {
-                    // 如果中点也不行，递归搜索左子树
-                    leaf = closer(point, leaf, nearest(point, p.smaller, depth + 1));
-                }
-            }
-        }
-
-        return leaf;
-    }*/
     private float sqDist(Vector3 point, int index)
     {
         if (index == -1)

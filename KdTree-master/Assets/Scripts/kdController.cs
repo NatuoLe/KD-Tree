@@ -60,7 +60,8 @@ public class kdController : MonoBehaviour
         Debug.Log($"代码执行时间：{elapsedTime.TotalMilliseconds} 毫秒");
         if (nearestBrick != null && !nearestBrick.inHatchery)
         {
-            Debug.Log($"Nearest Brick Position: {nearestBrick.name}");
+            Debug.Log(
+                $"Nearest Brick Position: {nearestBrick.name},disctance:{Vector3.Distance(ball.position, closestBrick.transform.position)}");
             nearestBrick.Delete();
         }
     }
@@ -90,7 +91,7 @@ public class kdController : MonoBehaviour
         foreach (Brick brick in bricks)
         {
             float distance = Vector3.Distance(ball.position, brick.transform.position); // 计算当前砖块与球的距离
-            if (distance < minDistance)
+            if (distance < minDistance && !brick.inHatchery)
             {
                 minDistance = distance; // 更新最小距离
                 closestBrick = brick; // 更新最近的砖块

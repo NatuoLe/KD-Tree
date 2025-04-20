@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class Brick: MonoBehaviour
 {
@@ -15,6 +16,7 @@ public class Brick: MonoBehaviour
             if (hatchery)
             {
                 kdController.Delete(this);
+                this.gameObject.SetActive(false);
             }
         }
     }
@@ -24,5 +26,14 @@ public class Brick: MonoBehaviour
     public void Init(kdController kdController)
     {
         this.kdController = kdController;
+    }
+
+    public void Delete()
+    {
+        inHatchery = true;
+    }
+    private void Awake()
+    {
+        
     }
 }

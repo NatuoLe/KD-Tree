@@ -6,7 +6,7 @@ public class KdTree
     public Vector3[] points { get; private set; }
     public int[] ids { get; private set; }
     private Point _root;
-
+    
     public void build(Vector3[] points, int[] ids)
     {
         this.points = points;
@@ -16,16 +16,17 @@ public class KdTree
 
     private Point build(int offset, int length, int depth)
     {
-        if (length == 0)
-            return null;
-        int axis = findBestAxis(offset, length); // depth % 3;
+        if (length == 0) return null;
+
+        // 2D 专用：只在 X/Y 轴之间选择
+        int axis = findBestAxis(offset, length); // 返回 0 (X) 或 1 (Y)
         System.Array.Sort<Vector3, int>(points, ids, offset, length, COMPS[axis]);
+
         int mid = length >> 1;
         return new Point()
         {
             mid = offset + mid,
             axis = axis,
-            deleted = false, // 初始化为未删除
             smaller = build(offset, mid, depth + 1),
             larger = build(offset + mid + 1, length - (mid + 1), depth + 1)
         };
@@ -36,63 +37,96 @@ public class KdTree
         _root = delete(_root, id, 0);
     }
 
-    private Point delete(Point p, int id, int depth)
+    private Point delete(Point p, int targetId, int depth)
     {
         if (p == null)
             return null;
 
-        if (ids[p.mid] == id)
+        if (ids[p.mid] == targetId)  // 找到目标节点
         {
-            // 标记节点为删除
-            p.deleted = true;
+            p.deleted = true;  // 标记为删除
         }
         else
         {
-            int axis = depth % 3;
-            if (points[p.mid][axis] > points[id][axis])
+            int axis = p.axis;  // 当前分割轴 (0:X, 1:Y, 2:Z)
+        
+            // 获取目标点的坐标（先找到它在 points 中的索引）
+            int targetIndex = getIndex(targetId);  // 需要实现这个方法
+            if (targetIndex == -1)
             {
-                p.smaller = delete(p.smaller, id, depth + 1);
+                Debug.LogError($"ID {targetId} not found in points array!");
+                return p;
+            }
+
+            // 比较当前节点和目标节点在当前轴上的坐标
+            if (points[p.mid][axis] > points[targetIndex][axis])
+            {
+                p.smaller = delete(p.smaller, targetId, depth + 1);  // 目标点在左子树
             }
             else
             {
-                p.larger = delete(p.larger, id, depth + 1);
+                p.larger = delete(p.larger, targetId, depth + 1);  // 目标点在右子树
             }
         }
 
         return p;
     }
 
+    private int getIndex(int instanceId)
+    {
+        for (int i = 0; i < ids.Length; i++)
+        {
+            if (ids[i]== instanceId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
     public int nearest(Vector3 point)
     {
         return ids[nearest(point, _root, 0)];
     }
 
-    /*private int nearest(Vector3 point, Point p, int depth)
+    private int nearest(Vector3 point, Point p, int depth)
     {
         if (p == null)
             return -1;
-        var axis = p.axis; //depth % 3;
-        int leaf;
-        var dist2mid = points[p.mid][axis] - point[axis];
-        Debug.Log($"dis:维度{axis},point:{p.mid},point_{ points[p.mid][axis]}");
-        if (dist2mid > 0)
+
+        int best = -1;
+
+        // ----------------------------
+        // 关键修改点：仅在节点未删除时将其加入候选
+        // ----------------------------
+        if (!p.deleted)
         {
-            leaf = nearest(point, p.smaller, depth + 1);
-            var sqDist2leaf = sqDist(point, leaf);
-            if (sqDist2leaf > dist2mid * dist2mid)
-                leaf = closer(point, leaf, nearest(point, p.larger, depth + 1));
-        }
-        else
-        {
-            leaf = nearest(point, p.larger, depth + 1);
-            var sqDist2leaf = sqDist(point, leaf);
-            if (sqDist2leaf > dist2mid * dist2mid)
-                leaf = closer(point, leaf, nearest(point, p.smaller, depth + 1));
+            best = p.mid; // 当前节点有效时，初始化最佳候选
         }
 
-        return closer(point, leaf, p.mid);
-    }*/
-    private int nearest(Vector3 point, Point p, int depth) {
+        int axis = p.axis;
+        // 计算分割距离
+        float distToSplit = point[axis] - points[p.mid][axis];
+
+        // 优先搜索更近的分支
+        Point firstChild = distToSplit < 0 ? p.smaller : p.larger;
+        Point secondChild = distToSplit < 0 ? p.larger : p.smaller;
+
+        // 递归搜索第一子树
+        int candidate = nearest(point, firstChild, depth + 1);
+        best = closer(point, best, candidate);
+
+        // 检查是否需要搜索第二子树
+        float bestDist = sqDist(point, best);
+        if (secondChild != null && (best == -1 || Mathf.Abs(distToSplit) < Mathf.Sqrt(bestDist)))
+        {
+            candidate = nearest(point, secondChild, depth + 1);
+            best = closer(point, best, candidate);
+        }
+
+        return best;
+    }
+    /*private int nearest(Vector3 point, Point p, int depth) {
         if (p == null || p.deleted)
             return -1;
 
@@ -125,7 +159,7 @@ public class KdTree
         }
 
         return leaf;
-    }
+    }*/
     private float sqDist(Vector3 point, int index)
     {
         if (index == -1)
@@ -136,7 +170,7 @@ public class KdTree
 
     private int closer(Vector3 point, int i0, int i1)
     {
-        Debug.Log($"i0:{i0},i1{i1}");
+        //Debug.Log($"i0:{i0},i1{i1}");
         if ((i0 == -1) && (i1 == -1 ))
         {
             return -1;
@@ -151,41 +185,60 @@ public class KdTree
 
     private int findBestAxis(int offset, int length)
     {
-        float minx, miny, minz, maxx, maxy, maxz;
-        minx = miny = minz = float.MaxValue;
-        maxx = maxy = maxz = float.MinValue;
-        for (var i = 0; i < length; i++)
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+        float minZ = float.MaxValue, maxZ = float.MinValue;
+        bool allZSame = true;
+        float firstZ = points[offset].z;
+
+        for (int i = 0; i < length; i++)
         {
-            var p = points[i + offset];
-            if (p.x < minx)
-                minx = p.x;
-            else if (maxx < p.x)
-                maxx = p.x;
-            if (p.y < miny)
-                miny = p.y;
-            else if (maxy < p.y)
-                maxy = p.y;
-            if (p.z < minz)
-                minz = p.z;
-            else if (maxz < p.z)
-                maxz = p.z;
+            Vector3 p = points[offset + i];
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        
+            // 检查 Z 轴是否全部相同
+            if (allZSame && !Mathf.Approximately(p.z, firstZ))
+            {
+                allZSame = false;
+                minZ = Mathf.Min(minZ, p.z);
+                maxZ = Mathf.Max(maxZ, p.z);
+            }
         }
 
-        var size = new Vector3(maxx - minx, maxy - miny, maxz - minz);
-        if (size.x < size.y)
-        {
-            if (size.y < size.z)
-                return AXIS_Z;
-            else
-                return AXIS_Y;
-        }
-        else
-        {
-            if (size.x < size.z)
-                return AXIS_Z;
-            else
-                return AXIS_X;
-        }
+        float rangeX = maxX - minX;
+        float rangeY = maxY - minY;
+        float rangeZ = allZSame ? -1 : (maxZ - minZ); // 如果 Z 全部相同，标记为无效
+
+        // 选择有效的、跨度最大的轴
+        if (rangeZ > rangeX && rangeZ > rangeY) return AXIS_Z;
+        return (rangeX >= rangeY) ? AXIS_X : AXIS_Y;
+        
+    }
+    public void PrintTree()
+    {
+        PrintTree(_root, 0);
+    }
+
+    private void PrintTree(Point p, int depth)
+    {
+        if (p == null)
+            return;
+
+        // 缩进表示层级
+        string indent = new string(' ', depth * 4);
+
+        // 打印当前节点信息
+        string nodeInfo = $"{indent}Node (ID: {ids[p.mid]}, Point: {points[p.mid]}, Axis: {p.axis}, Deleted: {p.deleted})";
+        Debug.Log(nodeInfo);
+
+        // 递归打印左子树（smaller）
+        PrintTree(p.smaller, depth + 1);
+
+        // 递归打印右子树（larger）
+        PrintTree(p.larger, depth + 1);
     }
 
     private class Point
